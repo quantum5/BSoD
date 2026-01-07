@@ -1,24 +1,25 @@
 #define _WIN32_WINNT 0x0500
-#define WINVER 0x0500
+#define WINVER       0x0500
 
 #include <windows.h>
+
 #include <shlwapi.h>
 #ifdef NOKILL
-#    include <aclapi.h>
+#include <aclapi.h>
 #endif
 
-#define WM_ENFORCE_FOCUS (WM_APP+0)
-#define PASSWORD_LENGTH sizeof(szRealPassword)-1
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof*(x))
+#define WM_ENFORCE_FOCUS (WM_APP + 0)
+#define PASSWORD_LENGTH  sizeof(szRealPassword) - 1
+#define ARRAY_SIZE(x)    (sizeof(x) / sizeof *(x))
 
 #if defined(_MSC_VER) && _MSC_VER <= 1200
-#   define wnsprintf wnsprintfA
-    int wnsprintfA(PSTR pszDest, int cchDest, PCSTR pszFmt, ...);
-    typedef unsigned char *RPC_CSTR;
+#define wnsprintf wnsprintfA
+int wnsprintfA(PSTR pszDest, int cchDest, PCSTR pszFmt, ...);
+typedef unsigned char *RPC_CSTR;
 #endif
 
-typedef BOOL (WINAPI *LPFN_SHUTDOWNBLOCKREASONCREATE)(HWND, LPCWSTR);
-typedef BOOL (WINAPI *LPFN_SHUTDOWNBLOCKREASONDESTROY)(HWND);
+typedef BOOL(WINAPI *LPFN_SHUTDOWNBLOCKREASONCREATE)(HWND, LPCWSTR);
+typedef BOOL(WINAPI *LPFN_SHUTDOWNBLOCKREASONDESTROY)(HWND);
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK DlgProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
@@ -43,14 +44,14 @@ HBITMAP hbBSOD;
 HKEY hSystemPolicy;
 
 ACCEL accel[] = {
-    {FALT | FVIRTKEY, 0x31, 0xBE00},
-    {FALT | FVIRTKEY, 0x33, 0xBE01},
-    {FALT | FVIRTKEY, 0x35, 0xBE02},
-    {FALT | FVIRTKEY, 0x37, 0xBE03},
-    {FALT | FVIRTKEY, VK_F2, 0xBE04},
-    {FALT | FVIRTKEY, VK_F4, 0xBE05},
-    {FALT | FVIRTKEY, VK_F6, 0xBE06},
-    {FALT | FVIRTKEY, VK_F8, 0xBE07},
+    {FALT | FVIRTKEY,                     0x31,      0xBE00},
+    {FALT | FVIRTKEY,                     0x33,      0xBE01},
+    {FALT | FVIRTKEY,                     0x35,      0xBE02},
+    {FALT | FVIRTKEY,                     0x37,      0xBE03},
+    {FALT | FVIRTKEY,                     VK_F2,     0xBE04},
+    {FALT | FVIRTKEY,                     VK_F4,     0xBE05},
+    {FALT | FVIRTKEY,                     VK_F6,     0xBE06},
+    {FALT | FVIRTKEY,                     VK_F8,     0xBE07},
     {FALT | FCONTROL | FSHIFT | FVIRTKEY, VK_DELETE, 0xDEAD},
 };
 BOOL bAccel[ARRAY_SIZE(accel) - 1];
@@ -82,7 +83,7 @@ LPSTR GenerateUUID() {
 
 // Define memset to avoid pulling in libc
 void *memset(void *s, int c, size_t n) {
-    char* p = (char*) s;
+    char *p = (char *) s;
     while (n--)
         *p++ = (char) c;
     return s;
@@ -92,13 +93,15 @@ void *memset(void *s, int c, size_t n) {
 void DisableTaskManager(void) {
     DWORD dwOne = 1;
     if (hSystemPolicy)
-        RegSetValueEx(hSystemPolicy, "DisableTaskMgr", 0, REG_DWORD, (LPBYTE)&dwOne, sizeof(DWORD));
+        RegSetValueEx(hSystemPolicy, "DisableTaskMgr", 0, REG_DWORD, (LPBYTE) &dwOne,
+                      sizeof(DWORD));
 }
 
 void EnableTaskManager(void) {
     DWORD dwZero = 0;
     if (hSystemPolicy)
-        RegSetValueEx(hSystemPolicy, "DisableTaskMgr", 0, REG_DWORD, (LPBYTE)&dwZero, sizeof(DWORD));
+        RegSetValueEx(hSystemPolicy, "DisableTaskMgr", 0, REG_DWORD, (LPBYTE) &dwZero,
+                      sizeof(DWORD));
 }
 #endif
 
@@ -109,8 +112,7 @@ DWORD ProtectProcess(void) {
     if (!InitializeAcl(&acl, sizeof acl, ACL_REVISION))
         return GetLastError();
 
-    return SetSecurityInfo(GetCurrentProcess(), SE_KERNEL_OBJECT,
-                           DACL_SECURITY_INFORMATION, NULL,
+    return SetSecurityInfo(GetCurrentProcess(), SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, NULL,
                            NULL, &acl, NULL);
 #else
     return 0;
@@ -199,18 +201,8 @@ int Random() {
 }
 
 LPSTR lpBadDrivers[] = {
-    "HTTP.SYS",
-    "SPCMDCON.SYS",
-    "NTFS.SYS",
-    "ACPI.SYS",
-    "AMDK8.SYS",
-    "ATI2MTAG.SYS",
-    "CDROM.SYS",
-    "BEEP.SYS",
-    "BOWSER.SYS",
-    "EVBDX.SYS",
-    "TCPIP.SYS",
-    "RDPDR.SYS",
+    "HTTP.SYS",  "SPCMDCON.SYS", "NTFS.SYS",   "ACPI.SYS",  "AMDK8.SYS", "ATI2MTAG.SYS",
+    "CDROM.SYS", "BEEP.SYS",     "BOWSER.SYS", "EVBDX.SYS", "TCPIP.SYS", "RDPDR.SYS",
 };
 
 typedef struct {
@@ -219,11 +211,11 @@ typedef struct {
 } BUG_CHECK_CODE;
 
 BUG_CHECK_CODE lpErrorCodes[] = {
-    {"INVALID_SOFTWARE_INTERRUPT", 0x07},
+    {"INVALID_SOFTWARE_INTERRUPT",  0x07},
     {"KMODE_EXCEPTION_NOT_HANDLED", 0x1E},
     {"PAGE_FAULT_IN_NONPAGED_AREA", 0x50},
-    {"KERNEL_STACK_INPAGE_ERROR", 0x77},
-    {"KERNEL_DATA_INPAGE_ERROR", 0x7A},
+    {"KERNEL_STACK_INPAGE_ERROR",   0x77},
+    {"KERNEL_DATA_INPAGE_ERROR",    0x7A},
 };
 
 HBITMAP RenderBSoD(void) {
@@ -241,10 +233,8 @@ HBITMAP RenderBSoD(void) {
 
     hdc = CreateCompatibleDC(GetDC(hwnd));
     hbmp = CreateCompatibleBitmap(GetDC(hwnd), 640, 480);
-    hFont = CreateFont(14, 8, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET,
-                       OUT_RASTER_PRECIS, CLIP_DEFAULT_PRECIS,
-                       NONANTIALIASED_QUALITY, FF_MODERN,
-                       "Lucida Console");
+    hFont = CreateFont(14, 8, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET, OUT_RASTER_PRECIS,
+                       CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, FF_MODERN, "Lucida Console");
 
     // Build BSOD string
     lstrcat(bsod, bsod1);
@@ -258,40 +248,27 @@ HBITMAP RenderBSoD(void) {
     lstrcat(bsod, bcc.name);
     lstrcat(bsod, bsod3);
     switch (Random() % 4) {
-        case 0:
-            wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code,
-                      Random() | 1 << 31,
-                      Random() & 0xF,
-                      Random() | 1 << 31,
-                      0);
-            break;
-        case 1:
-            wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code,
-                      Random() | 1 << 31,
-                      Random() | 1 << 31,
-                      Random() & 0xF,
-                      Random() & 0xF);
-            break;
-        case 2:
-            wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code,
-                      Random() | 1 << 31,
-                      0,
-                      Random() & 0xF,
-                      Random() & 0xF);
-            break;
-        default:
-            wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code,
-                      Random() | 1 << 31,
-                      Random() | 1 << 31,
-                      Random() | 1 << 31,
-                      Random() | 1 << 31);
-            break;
+    case 0:
+        wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code, Random() | 1 << 31, Random() & 0xF,
+                  Random() | 1 << 31, 0);
+        break;
+    case 1:
+        wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code, Random() | 1 << 31, Random() | 1 << 31,
+                  Random() & 0xF, Random() & 0xF);
+        break;
+    case 2:
+        wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code, Random() | 1 << 31, 0, Random() & 0xF,
+                  Random() & 0xF);
+        break;
+    default:
+        wnsprintf(buf, ARRAY_SIZE(buf), bsod4, bcc.code, Random() | 1 << 31, Random() | 1 << 31,
+                  Random() | 1 << 31, Random() | 1 << 31);
+        break;
     }
     lstrcat(bsod, buf);
     lstrcat(bsod, bsod5);
     dwAddress = Random() | 1 << 31;
-    wnsprintf(buf, ARRAY_SIZE(buf), bsod6, lpName, dwAddress, dwAddress & 0xFFFF0000,
-                UnixTime());
+    wnsprintf(buf, ARRAY_SIZE(buf), bsod6, lpName, dwAddress, dwAddress & 0xFFFF0000, UnixTime());
     lstrcat(bsod, buf);
 
     SelectObject(hdc, hbmp);
@@ -316,7 +293,8 @@ DWORD APIENTRY RawEntryPoint() {
 
     ProtectProcess();
 
-    // Save the current sticky/toggle/filter key settings so they can be restored them later
+    // Save the current sticky/toggle/filter key settings so they can be
+    // restored them later
     SystemParametersInfo(SPI_GETSTICKYKEYS, sizeof(STICKYKEYS), &StartupStickyKeys, 0);
     SystemParametersInfo(SPI_GETTOGGLEKEYS, sizeof(TOGGLEKEYS), &StartupToggleKeys, 0);
     SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &StartupFilterKeys, 0);
@@ -329,9 +307,10 @@ DWORD APIENTRY RawEntryPoint() {
 #endif
 
 #ifdef NOTASKMGR
-    if (RegCreateKeyEx(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\"
-                        "CurrentVersion\\Policies\\System", 0, NULL,
-                        0, KEY_SET_VALUE, NULL, &hSystemPolicy, NULL)) {
+    if (RegCreateKeyEx(HKEY_CURRENT_USER,
+                       "Software\\Microsoft\\Windows\\"
+                       "CurrentVersion\\Policies\\System",
+                       0, NULL, 0, KEY_SET_VALUE, NULL, &hSystemPolicy, NULL)) {
         hSystemPolicy = NULL;
     }
 #endif
@@ -353,14 +332,14 @@ DWORD APIENTRY RawEntryPoint() {
     if (!RegisterClassEx(&wincl))
         return 0;
 
-    hwnd = CreateWindowEx(0, szClassName, "Blue Screen of Death",
-                          WS_POPUP, CW_USEDEFAULT,
-                          CW_USEDEFAULT, 640, 480,
-                          NULL, NULL, hInst, NULL);
+    hwnd = CreateWindowEx(0, szClassName, "Blue Screen of Death", WS_POPUP, CW_USEDEFAULT,
+                          CW_USEDEFAULT, 640, 480, NULL, NULL, hInst, NULL);
 
     user32 = GetModuleHandle("user32");
-    fShutdownBlockReasonCreate = (LPFN_SHUTDOWNBLOCKREASONCREATE)GetProcAddress(user32, "ShutdownBlockReasonCreate");
-    fShutdownBlockReasonDestroy = (LPFN_SHUTDOWNBLOCKREASONDESTROY)GetProcAddress(user32, "ShutdownBlockReasonDestroy");
+    fShutdownBlockReasonCreate =
+        (LPFN_SHUTDOWNBLOCKREASONCREATE) GetProcAddress(user32, "ShutdownBlockReasonCreate");
+    fShutdownBlockReasonDestroy =
+        (LPFN_SHUTDOWNBLOCKREASONDESTROY) GetProcAddress(user32, "ShutdownBlockReasonDestroy");
 
     hhkKeyboard = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInst, 0);
 #ifdef LOCK_MOUSE
@@ -391,47 +370,47 @@ LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
-        KBDLLHOOKSTRUCT *key = (KBDLLHOOKSTRUCT*) lParam;
+        KBDLLHOOKSTRUCT *key = (KBDLLHOOKSTRUCT *) lParam;
 
         switch (key->vkCode) {
-            case VK_LWIN:
-            case VK_RWIN:
-            case VK_TAB:
-            case VK_ESCAPE:
-            case VK_LBUTTON:
-            case VK_RBUTTON:
-            case VK_CANCEL:
-            case VK_MBUTTON:
-            case VK_CLEAR:
-            case VK_PAUSE:
-            case VK_CAPITAL:
-            case VK_KANA:
-            case VK_JUNJA:
-            case VK_FINAL:
-            case VK_HANJA:
-            case VK_NONCONVERT:
-            case VK_MODECHANGE:
-            case VK_ACCEPT:
-            case VK_END:
-            case VK_HOME:
-            case VK_LEFT:
-            case VK_UP:
-            case VK_RIGHT:
-            case VK_DOWN:
-            case VK_SELECT:
-            case VK_PRINT:
-            case VK_EXECUTE:
-            case VK_SNAPSHOT:
-            case VK_INSERT:
-            case VK_HELP:
-            case VK_APPS:
-            case VK_SLEEP:
-            case VK_NUMLOCK:
-            case VK_SCROLL:
-            case VK_PROCESSKEY:
-            case VK_PACKET:
-            case VK_ATTN:
-                return 1;
+        case VK_LWIN:
+        case VK_RWIN:
+        case VK_TAB:
+        case VK_ESCAPE:
+        case VK_LBUTTON:
+        case VK_RBUTTON:
+        case VK_CANCEL:
+        case VK_MBUTTON:
+        case VK_CLEAR:
+        case VK_PAUSE:
+        case VK_CAPITAL:
+        case VK_KANA:
+        case VK_JUNJA:
+        case VK_FINAL:
+        case VK_HANJA:
+        case VK_NONCONVERT:
+        case VK_MODECHANGE:
+        case VK_ACCEPT:
+        case VK_END:
+        case VK_HOME:
+        case VK_LEFT:
+        case VK_UP:
+        case VK_RIGHT:
+        case VK_DOWN:
+        case VK_SELECT:
+        case VK_PRINT:
+        case VK_EXECUTE:
+        case VK_SNAPSHOT:
+        case VK_INSERT:
+        case VK_HELP:
+        case VK_APPS:
+        case VK_SLEEP:
+        case VK_NUMLOCK:
+        case VK_SCROLL:
+        case VK_PROCESSKEY:
+        case VK_PACKET:
+        case VK_ATTN:
+            return 1;
         }
     }
     return CallNextHookEx(NULL, nCode, wParam, lParam);
@@ -440,179 +419,181 @@ LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) {
     int i;
     switch (message) {
-        case WM_CREATE:
-            scwnd = CreateWindowEx(0, "STATIC", "",
-                    SS_BITMAP | WS_CHILD | WS_VISIBLE,
-                    0, 0, 640, 480,
-                    hwnd, (HMENU)-1, NULL, NULL);
+    case WM_CREATE:
+        scwnd = CreateWindowEx(0, "STATIC", "", SS_BITMAP | WS_CHILD | WS_VISIBLE, 0, 0, 640, 480,
+                               hwnd, (HMENU) -1, NULL, NULL);
 #ifndef NOAUTOKILL
-            SetTimer(hwnd, 0xDEAD, 50000, NULL);
+        SetTimer(hwnd, 0xDEAD, 50000, NULL);
 #endif
-            SetTimer(hwnd, 0xBEEF, 1000, NULL);
+        SetTimer(hwnd, 0xBEEF, 1000, NULL);
 #ifdef FORCEDESK
-            SetTimer(hwnd, 0xFAC, 1000, NULL);
+        SetTimer(hwnd, 0xFAC, 1000, NULL);
 #endif
 #ifndef SECUREDESK
-            SetTimer(hwnd, 0xF0CA, 1000, NULL);
+        SetTimer(hwnd, 0xF0CA, 1000, NULL);
 #endif
-            SetTimer(hwnd, 0xBEEB, 5000, NULL);
+        SetTimer(hwnd, 0xBEEB, 5000, NULL);
 
-            SetCursor(NULL);
+        SetCursor(NULL);
 
-            if (fShutdownBlockReasonCreate)
-                fShutdownBlockReasonCreate(hwnd, L"You can't shutdown with a BSoD running.");
+        if (fShutdownBlockReasonCreate)
+            fShutdownBlockReasonCreate(hwnd, L"You can't shutdown with a BSoD running.");
 
-            hAccel = CreateAcceleratorTable(accel, ARRAY_SIZE(accel));
+        hAccel = CreateAcceleratorTable(accel, ARRAY_SIZE(accel));
 
-            // Force to front
-            SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
-            SetForegroundWindow(hwnd);
-            LockSetForegroundWindow(1);
+        // Force to front
+        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
+                     SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOSIZE);
+        SetForegroundWindow(hwnd);
+        LockSetForegroundWindow(1);
 
-            AllowAccessibilityShortcutKeys(FALSE);
+        AllowAccessibilityShortcutKeys(FALSE);
 #ifdef NOTASKMGR
-            DisableTaskManager();
+        DisableTaskManager();
 #endif
-            break;
+        break;
 
-        case WM_SHOWWINDOW:
-            break;
+    case WM_SHOWWINDOW:
+        break;
 
-        case WM_TIMER:
-            if (wParam == 0xBEEF) {
-                RECT rectClient;
+    case WM_TIMER:
+        if (wParam == 0xBEEF) {
+            RECT rectClient;
 
-                KillTimer(hwnd, 0xBEEF);
-                SendMessage(scwnd, STM_SETIMAGE, (WPARAM)IMAGE_BITMAP, (LPARAM) RenderBSoD());
-                GetClientRect(hwnd, &rectClient);
-                SetWindowPos(scwnd, 0, 0, 0, rectClient.right,
-                                rectClient.bottom, SWP_NOMOVE |
-                                SWP_NOZORDER | SWP_NOACTIVATE);
-                InvalidateRect(hwnd, NULL, TRUE);
-            }
+            KillTimer(hwnd, 0xBEEF);
+            SendMessage(scwnd, STM_SETIMAGE, (WPARAM) IMAGE_BITMAP, (LPARAM) RenderBSoD());
+            GetClientRect(hwnd, &rectClient);
+            SetWindowPos(scwnd, 0, 0, 0, rectClient.right, rectClient.bottom,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            InvalidateRect(hwnd, NULL, TRUE);
+        }
 #ifndef NOAUTOKILL
-            else if (wParam == 0xDEAD) {
-                KillTimer(hwnd, 0xDEAD);
-                DestroyWindow(hwnd);
-            }
+        else if (wParam == 0xDEAD) {
+            KillTimer(hwnd, 0xDEAD);
+            DestroyWindow(hwnd);
+        }
 #endif
 #ifdef FORCEDESK
-            else if (wParam == 0xFAC) {
-                SwitchDesktop(hNewDesk);
-            }
+        else if (wParam == 0xFAC) {
+            SwitchDesktop(hNewDesk);
+        }
 #endif
 #ifndef SECUREDESK
-            else if (wParam == 0xF0CA) {
-                goto focus;
-            }
+        else if (wParam == 0xF0CA) {
+            goto focus;
+        }
 #endif
-            else if (wParam == 0xBEEB) {
-                KillTimer(hwnd, 0xBEEB);
-            }
-            break;
+        else if (wParam == 0xBEEB) {
+            KillTimer(hwnd, 0xBEEB);
+        }
+        break;
 
-        case WM_DESTROY:
-            if (fShutdownBlockReasonDestroy != NULL)
-                fShutdownBlockReasonDestroy(hwnd);
+    case WM_DESTROY:
+        if (fShutdownBlockReasonDestroy != NULL)
+            fShutdownBlockReasonDestroy(hwnd);
 
-            UnhookWindowsHookEx(hhkKeyboard);
+        UnhookWindowsHookEx(hhkKeyboard);
 #ifdef LOCK_MOUSE
-            UnhookWindowsHookEx(hhkMouse);
+        UnhookWindowsHookEx(hhkMouse);
 #endif
-            // Clean up resources
-            DestroyAcceleratorTable(hAccel);
-            LockSetForegroundWindow(0);
-            SelfFree(szDeskName);
-            AllowAccessibilityShortcutKeys(TRUE);
+        // Clean up resources
+        DestroyAcceleratorTable(hAccel);
+        LockSetForegroundWindow(0);
+        SelfFree(szDeskName);
+        AllowAccessibilityShortcutKeys(TRUE);
 #ifdef SECUREDESK
-            SetThreadDesktop(hOldDesk);
-            SwitchDesktop(hOldDesk);
-            CloseDesktop(hNewDesk);
+        SetThreadDesktop(hOldDesk);
+        SwitchDesktop(hOldDesk);
+        CloseDesktop(hNewDesk);
 #endif
 #ifdef NOTASKMGR
-            EnableTaskManager();
+        EnableTaskManager();
 #endif
-            PostQuitMessage(0);
+        PostQuitMessage(0);
+        break;
+
+    case WM_CLOSE:
+        switch (DialogBox(hInst, MAKEINTRESOURCE(32), hwnd, DlgProc)) {
+        case 1:
+            DestroyWindow(hwnd);
             break;
-
-        case WM_CLOSE:
-            switch (DialogBox(hInst, MAKEINTRESOURCE(32), hwnd, DlgProc)) {
-                case 1:
-                    DestroyWindow(hwnd);
-                    break;
-                case 2:
-                    hdlg = (HWND)0xDEADBEEF;
-                    MessageBox(hwnd, "You got the password wrong!\n"
-                                "Good luck guessing!", "Error!", MB_ICONERROR);
-                    hdlg = NULL;
-                    break;
-                default:
-                    hdlg = (HWND)0xDEADBEEF;
-                    MessageBox(hwnd, "You just abandoned the perfect chance to exit!\n"
-                                "Good luck trying!", "Error!", MB_ICONERROR);
-                    hdlg = NULL;
-            }
+        case 2:
+            hdlg = (HWND) 0xDEADBEEF;
+            MessageBox(hwnd,
+                       "You got the password wrong!\n"
+                       "Good luck guessing!",
+                       "Error!", MB_ICONERROR);
+            hdlg = NULL;
             break;
-
-        case WM_KEYDOWN:
-            return 0;
-
-        case WM_COMMAND:
-        case WM_SYSCOMMAND:
-            if (HIWORD(wParam) == 1) {
-                if (LOWORD(wParam) == 0xDEAD) {
-                    for (i = 0; i < ARRAY_SIZE(bAccel); ++i)
-                        if (!bAccel[i])
-                            return 0;
-
-                    SendMessage(hwnd, WM_CLOSE, 0, 0);
-                } else if ((LOWORD(wParam) & 0xFF00) == 0xBE00) {
-                    int index = LOWORD(wParam) & 0xFF;
-                    if (index < ARRAY_SIZE(bAccel))
-                        bAccel[index] = TRUE;
-                }
-            }
-            break;
-
-        case WM_QUERYENDSESSION:
-            break;
-
-        case WM_ENFORCE_FOCUS:
-#ifndef SECUREDESK
-            focus:
-#endif
-            if (GetForegroundWindow() != hdlg) {
-                if (hdlg != (HWND)0xDEADBEEF) {
-                    SetFocus(hdlg);
-                    SetForegroundWindow(hdlg);
-                } else if (!hdlg) {
-                    SetFocus(hwnd);
-                    SetForegroundWindow(hwnd);
-                    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE);
-                }
-            }
-            SetCursor(NULL);
-            ShowWindow(hwnd, SW_SHOWMAXIMIZED);
-            break;
-
-        case WM_ACTIVATE:
-            if (LOWORD(wParam) != WA_INACTIVE)
-                break;
-            if (!HIWORD(wParam))
-                break;
-
-        case WM_NCACTIVATE: // Above are cases that focus can be gain or lost
-        case WM_KILLFOCUS: // All the cases that focus is lost
-            PostMessage(hwnd, WM_ENFORCE_FOCUS, 0, 0);
-            return 1;
-
-        case WM_SIZE:
-            if (wParam != SIZE_MAXIMIZED)
-                ShowWindow(hwnd, SW_SHOWMAXIMIZED);
-            break;
-
         default:
-            return DefWindowProc(hwnd, message, wParam, lParam);
+            hdlg = (HWND) 0xDEADBEEF;
+            MessageBox(hwnd,
+                       "You just abandoned the perfect chance to exit!\n"
+                       "Good luck trying!",
+                       "Error!", MB_ICONERROR);
+            hdlg = NULL;
+        }
+        break;
+
+    case WM_KEYDOWN:
+        return 0;
+
+    case WM_COMMAND:
+    case WM_SYSCOMMAND:
+        if (HIWORD(wParam) == 1) {
+            if (LOWORD(wParam) == 0xDEAD) {
+                for (i = 0; i < ARRAY_SIZE(bAccel); ++i)
+                    if (!bAccel[i])
+                        return 0;
+
+                SendMessage(hwnd, WM_CLOSE, 0, 0);
+            } else if ((LOWORD(wParam) & 0xFF00) == 0xBE00) {
+                int index = LOWORD(wParam) & 0xFF;
+                if (index < ARRAY_SIZE(bAccel))
+                    bAccel[index] = TRUE;
+            }
+        }
+        break;
+
+    case WM_QUERYENDSESSION:
+        break;
+
+    case WM_ENFORCE_FOCUS:
+#ifndef SECUREDESK
+    focus:
+#endif
+        if (GetForegroundWindow() != hdlg) {
+            if (hdlg != (HWND) 0xDEADBEEF) {
+                SetFocus(hdlg);
+                SetForegroundWindow(hdlg);
+            } else if (!hdlg) {
+                SetFocus(hwnd);
+                SetForegroundWindow(hwnd);
+                SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+            }
+        }
+        SetCursor(NULL);
+        ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+        break;
+
+    case WM_ACTIVATE:
+        if (LOWORD(wParam) != WA_INACTIVE)
+            break;
+        if (!HIWORD(wParam))
+            break;
+
+    case WM_NCACTIVATE: // Above are cases that focus can be gain or lost
+    case WM_KILLFOCUS:  // All the cases that focus is lost
+        PostMessage(hwnd, WM_ENFORCE_FOCUS, 0, 0);
+        return 1;
+
+    case WM_SIZE:
+        if (wParam != SIZE_MAXIMIZED)
+            ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+        break;
+
+    default:
+        return DefWindowProc(hwnd, message, wParam, lParam);
     }
     return 0;
 }
@@ -621,39 +602,39 @@ INT_PTR CALLBACK DlgProc(HWND hWndDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
     UNREFERENCED_PARAMETER(lParam);
 
     switch (msg) {
-        case WM_INITDIALOG:
-            hdlg = hWndDlg;
-            break;
+    case WM_INITDIALOG:
+        hdlg = hWndDlg;
+        break;
 
-        case WM_COMMAND:
-            switch(wParam) {
-                case IDOK: {
-                    DWORD dwLength, i;
-                    TCHAR szPassword[PASSWORD_LENGTH+1];
-                    dwLength = GetDlgItemText(hWndDlg, 1024, szPassword, PASSWORD_LENGTH+1);
-                    if (dwLength != PASSWORD_LENGTH) {
-                        EndDialog(hWndDlg, 2);
-                        hdlg = NULL;
-                        break;
-                    }
-
-                    for (i = 0; i < PASSWORD_LENGTH; ++i)
-                        szPassword[i] ^= 37;
-
-                    EndDialog(hWndDlg, lstrcmp(szPassword, szRealPassword) ? 2 : 1);
-                    hdlg = NULL;
-                    break;
-                }
-
-                case IDCANCEL:
-                    EndDialog(hWndDlg, 0);
-                    hdlg = NULL;
-                    break;
+    case WM_COMMAND:
+        switch (wParam) {
+        case IDOK: {
+            DWORD dwLength, i;
+            TCHAR szPassword[PASSWORD_LENGTH + 1];
+            dwLength = GetDlgItemText(hWndDlg, 1024, szPassword, PASSWORD_LENGTH + 1);
+            if (dwLength != PASSWORD_LENGTH) {
+                EndDialog(hWndDlg, 2);
+                hdlg = NULL;
+                break;
             }
-            break;
 
-        default:
-            return FALSE;
+            for (i = 0; i < PASSWORD_LENGTH; ++i)
+                szPassword[i] ^= 37;
+
+            EndDialog(hWndDlg, lstrcmp(szPassword, szRealPassword) ? 2 : 1);
+            hdlg = NULL;
+            break;
+        }
+
+        case IDCANCEL:
+            EndDialog(hWndDlg, 0);
+            hdlg = NULL;
+            break;
+        }
+        break;
+
+    default:
+        return FALSE;
     }
     return TRUE;
 }
