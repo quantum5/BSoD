@@ -12,6 +12,8 @@ The result was this Blue Screen of Death simulator:
 As you can see, it faithfully emulates the Blue Screen of Death as shown by
 Windows XP, Windows Vista, and Windows 7.
 
+Binaries can be downloaded from [Jenkins](https://ci.dmoj.ca/job/bsod/).
+
 ## Technical details
 
 This is an ancient program, first written in ~2012, targetting Windows XP and
