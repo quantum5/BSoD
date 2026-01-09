@@ -8,9 +8,21 @@
 #include <aclapi.h>
 #endif
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof *(x))
+
 #define WM_ENFORCE_FOCUS (WM_APP + 0)
-#define PASSWORD_LENGTH  sizeof(szRealPassword) - 1
-#define ARRAY_SIZE(x)    (sizeof(x) / sizeof *(x))
+
+#define TM_DISPLAY   0xBEEF
+#define TM_AUTOKILL  0xDEAD
+#define TM_FORCEDESK 0xFAC
+#define TM_FOCUS     0xF0CA
+
+#define AUTOKILL_TIMEOUT 50000
+#define DISPLAY_DELAY    1000
+#define FORCE_INTERVAL   1000
+
+#define HDLG_MSGBOX ((HWND) 0xDEADBEEF)
+#define IDC_EDIT1   1024
 
 #if defined(_MSC_VER) && _MSC_VER <= 1200
 #define wnsprintf wnsprintfA
@@ -26,28 +38,36 @@ INT_PTR CALLBACK DlgProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK LowLevelKeyboardProc(int, WPARAM, LPARAM);
 LRESULT CALLBACK LowLevelMouseProc(int, WPARAM, LPARAM);
 
+#define PASSWORD_LENGTH (sizeof(szRealPassword) - 1)
 const char szRealPassword[] = {0x54, 0x50, 0x44, 0x4b, 0x51, 0x50,
                                0x48, 0x10, 0xb,  0x46, 0x44, 0x00};
 const char szClassName[] = "BlueScreenOfDeath";
 
 HINSTANCE hInst;
-HANDLE hHeap;
-
 HWND hwnd;  // Main window
 HWND scwnd; // Static bitmap control
 HWND hdlg;  // Password popup
 
 HACCEL hAccel;
-HHOOK hhkKeyboard, hhkMouse;
-HDESK hOldDesk, hNewDesk;
-HBITMAP hbBSOD;
+HHOOK hhkKeyboard;
+
+#ifdef LOCK_MOUSE
+HHOOK hhkMouse;
+#endif
+
+#ifdef NOTASKMGR
 HKEY hSystemPolicy;
+#endif
+
+#ifdef SECUREDESK
+HDESK hOldDesk, hNewDesk;
+#endif
 
 ACCEL accel[] = {
-    {FALT | FVIRTKEY,                     0x31,      0xBE00},
-    {FALT | FVIRTKEY,                     0x33,      0xBE01},
-    {FALT | FVIRTKEY,                     0x35,      0xBE02},
-    {FALT | FVIRTKEY,                     0x37,      0xBE03},
+    {FALT | FVIRTKEY,                     '1',       0xBE00},
+    {FALT | FVIRTKEY,                     '3',       0xBE01},
+    {FALT | FVIRTKEY,                     '5',       0xBE02},
+    {FALT | FVIRTKEY,                     '7',       0xBE03},
     {FALT | FVIRTKEY,                     VK_F2,     0xBE04},
     {FALT | FVIRTKEY,                     VK_F4,     0xBE05},
     {FALT | FVIRTKEY,                     VK_F6,     0xBE06},
@@ -56,29 +76,19 @@ ACCEL accel[] = {
 };
 BOOL bAccel[ARRAY_SIZE(accel) - 1];
 
-LPSTR szDeskName;
+char szDeskName[40];
 
 LPFN_SHUTDOWNBLOCKREASONCREATE fShutdownBlockReasonCreate;
 LPFN_SHUTDOWNBLOCKREASONDESTROY fShutdownBlockReasonDestroy;
 
-LPVOID SelfAlloc(DWORD dwSize) {
-    return HeapAlloc(hHeap, HEAP_ZERO_MEMORY, dwSize);
-}
-
-void SelfFree(LPVOID lpMemory) {
-    HeapFree(hHeap, 0, lpMemory);
-}
-
-LPSTR GenerateUUID() {
-    LPSTR szUUID = SelfAlloc(40);
+void GenerateUUID(LPSTR szUuid) {
     UUID bUuid;
     RPC_CSTR rstrUUID;
 
     UuidCreate(&bUuid);
     UuidToString(&bUuid, &rstrUUID);
-    lstrcpy(szUUID, (LPCSTR) rstrUUID);
+    lstrcpy(szUuid, (LPCSTR) rstrUUID);
     RpcStringFree(&rstrUUID);
-    return szUUID;
 }
 
 // Define memset to avoid pulling in libc
@@ -288,8 +298,7 @@ DWORD APIENTRY RawEntryPoint() {
     HMODULE user32;
 
     hInst = (HINSTANCE) GetModuleHandle(NULL);
-    hHeap = GetProcessHeap();
-    szDeskName = GenerateUUID();
+    GenerateUUID(szDeskName);
 
     ProtectProcess();
 
@@ -423,16 +432,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         scwnd = CreateWindowEx(0, "STATIC", "", SS_BITMAP | WS_CHILD | WS_VISIBLE, 0, 0, 640, 480,
                                hwnd, (HMENU) -1, NULL, NULL);
 #ifndef NOAUTOKILL
-        SetTimer(hwnd, 0xDEAD, 50000, NULL);
+        SetTimer(hwnd, TM_AUTOKILL, AUTOKILL_TIMEOUT, NULL);
 #endif
-        SetTimer(hwnd, 0xBEEF, 1000, NULL);
+        SetTimer(hwnd, TM_DISPLAY, DISPLAY_DELAY, NULL);
 #ifdef FORCEDESK
-        SetTimer(hwnd, 0xFAC, 1000, NULL);
+        SetTimer(hwnd, TM_FORCEDESK, FORCE_INTERVAL, NULL);
 #endif
 #ifndef SECUREDESK
-        SetTimer(hwnd, 0xF0CA, 1000, NULL);
+        SetTimer(hwnd, TM_FOCUS, FORCE_INTERVAL, NULL);
 #endif
-        SetTimer(hwnd, 0xBEEB, 5000, NULL);
 
         SetCursor(NULL);
 
@@ -457,39 +465,39 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         break;
 
     case WM_TIMER:
-        if (wParam == 0xBEEF) {
+        switch (wParam) {
+        case TM_DISPLAY: {
             RECT rectClient;
 
-            KillTimer(hwnd, 0xBEEF);
+            KillTimer(hwnd, TM_DISPLAY);
             SendMessage(scwnd, STM_SETIMAGE, (WPARAM) IMAGE_BITMAP, (LPARAM) RenderBSoD());
             GetClientRect(hwnd, &rectClient);
             SetWindowPos(scwnd, 0, 0, 0, rectClient.right, rectClient.bottom,
                          SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
             InvalidateRect(hwnd, NULL, TRUE);
+            break;
         }
 #ifndef NOAUTOKILL
-        else if (wParam == 0xDEAD) {
-            KillTimer(hwnd, 0xDEAD);
+        case TM_AUTOKILL:
+            KillTimer(hwnd, TM_AUTOKILL);
             DestroyWindow(hwnd);
-        }
+            break;
 #endif
 #ifdef FORCEDESK
-        else if (wParam == 0xFAC) {
+        case TM_FORCEDESK:
             SwitchDesktop(hNewDesk);
-        }
+            break;
 #endif
 #ifndef SECUREDESK
-        else if (wParam == 0xF0CA) {
+        case TM_FOCUS:
             goto focus;
-        }
 #endif
-        else if (wParam == 0xBEEB) {
-            KillTimer(hwnd, 0xBEEB);
+            break;
         }
         break;
 
     case WM_DESTROY:
-        if (fShutdownBlockReasonDestroy != NULL)
+        if (fShutdownBlockReasonDestroy)
             fShutdownBlockReasonDestroy(hwnd);
 
         UnhookWindowsHookEx(hhkKeyboard);
@@ -499,7 +507,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         // Clean up resources
         DestroyAcceleratorTable(hAccel);
         LockSetForegroundWindow(0);
-        SelfFree(szDeskName);
         AllowAccessibilityShortcutKeys(TRUE);
 #ifdef SECUREDESK
         SetThreadDesktop(hOldDesk);
@@ -518,7 +525,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             DestroyWindow(hwnd);
             break;
         case 2:
-            hdlg = (HWND) 0xDEADBEEF;
+            hdlg = HDLG_MSGBOX;
             MessageBox(hwnd,
                        "You got the password wrong!\n"
                        "Good luck guessing!",
@@ -526,7 +533,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             hdlg = NULL;
             break;
         default:
-            hdlg = (HWND) 0xDEADBEEF;
+            hdlg = HDLG_MSGBOX;
             MessageBox(hwnd,
                        "You just abandoned the perfect chance to exit!\n"
                        "Good luck trying!",
@@ -563,7 +570,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
     focus:
 #endif
         if (GetForegroundWindow() != hdlg) {
-            if (hdlg != (HWND) 0xDEADBEEF) {
+            if (hdlg && hdlg != HDLG_MSGBOX) {
                 SetFocus(hdlg);
                 SetForegroundWindow(hdlg);
             } else if (!hdlg) {
@@ -611,7 +618,7 @@ INT_PTR CALLBACK DlgProc(HWND hWndDlg, UINT msg, WPARAM wParam, LPARAM lParam) {
         case IDOK: {
             DWORD dwLength, i;
             TCHAR szPassword[PASSWORD_LENGTH + 1];
-            dwLength = GetDlgItemText(hWndDlg, 1024, szPassword, PASSWORD_LENGTH + 1);
+            dwLength = GetDlgItemText(hWndDlg, IDC_EDIT1, szPassword, PASSWORD_LENGTH + 1);
             if (dwLength != PASSWORD_LENGTH) {
                 EndDialog(hWndDlg, 2);
                 hdlg = NULL;
