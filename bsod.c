@@ -49,11 +49,7 @@ HWND scwnd; // Static bitmap control
 HWND hdlg;  // Password popup
 
 HACCEL hAccel;
-HHOOK hhkKeyboard;
-
-#ifdef LOCK_MOUSE
-HHOOK hhkMouse;
-#endif
+HHOOK hhkKeyboard, hhkMouse;
 
 #ifdef NOTASKMGR
 HKEY hSystemPolicy;
@@ -351,9 +347,7 @@ DWORD APIENTRY RawEntryPoint() {
         (LPFN_SHUTDOWNBLOCKREASONDESTROY) GetProcAddress(user32, "ShutdownBlockReasonDestroy");
 
     hhkKeyboard = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hInst, 0);
-#ifdef LOCK_MOUSE
     hhkMouse = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc, hInst, 0);
-#endif
 
     ShowWindow(hwnd, SW_MAXIMIZE);
     UpdateWindow(hwnd);
@@ -368,14 +362,12 @@ DWORD APIENTRY RawEntryPoint() {
     ExitProcess(messages.wParam);
 }
 
-#ifdef LOCK_MOUSE
 LRESULT CALLBACK LowLevelMouseProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         return 1;
     }
     return CallNextHookEx(NULL, nCode, wParam, lParam);
 }
-#endif
 
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
@@ -501,10 +493,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             fShutdownBlockReasonDestroy(hwnd);
 
         UnhookWindowsHookEx(hhkKeyboard);
-#ifdef LOCK_MOUSE
         UnhookWindowsHookEx(hhkMouse);
-#endif
-        // Clean up resources
+
         DestroyAcceleratorTable(hAccel);
         LockSetForegroundWindow(0);
         AllowAccessibilityShortcutKeys(TRUE);
