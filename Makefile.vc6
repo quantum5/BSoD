@@ -1,5 +1,5 @@
 CC=cl
-CFLAGS=/O1 /W4 /DNOAUTOKILL /DNOTASKMGR /DNOKILL
+CFLAGS=/O1 /W4 /DNOAUTOKILL /DNOTASKMGR
 LD=link
 LDFLAGS=/entry:RawEntryPoint /subsystem:windows /machine:x86 /release /merge:.rdata=.data /merge:.text=.data /filealign:512 /incremental:no /fixed /opt:ref /opt:icf /ignore:4078
 LIBS=kernel32.lib user32.lib gdi32.lib shlwapi.lib rpcrt4.lib advapi32.lib

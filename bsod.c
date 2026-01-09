@@ -3,10 +3,8 @@
 
 #include <windows.h>
 
-#include <shlwapi.h>
-#ifdef NOKILL
 #include <aclapi.h>
-#endif
+#include <shlwapi.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof *(x))
 
@@ -108,7 +106,6 @@ void EnableTaskManager(void) {
 #endif
 
 DWORD ProtectProcess(void) {
-#ifdef NOKILL
     ACL acl;
 
     if (!InitializeAcl(&acl, sizeof acl, ACL_REVISION))
@@ -116,9 +113,6 @@ DWORD ProtectProcess(void) {
 
     return SetSecurityInfo(GetCurrentProcess(), SE_KERNEL_OBJECT, DACL_SECURITY_INFORMATION, NULL,
                            NULL, &acl, NULL);
-#else
-    return 0;
-#endif
 }
 
 STICKYKEYS StartupStickyKeys = {sizeof(STICKYKEYS), 0};
