@@ -1,11 +1,11 @@
-# Blue Screen of Death simulator
+# Blue Screen of Death lock screen
 
 This was a little program I'd written in high school to lock Windows XP
 machines, back when the school's group policy didn't allow screen locking, but
 fellow students have a habit of doing suspicious things when you left the
 computer unattended.
 
-The result was this Blue Screen of Death simulator:
+The result was this Blue Screen of Death lock screen:
 
 ![example fake BSoD](bsod.png)
 
