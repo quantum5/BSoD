@@ -237,16 +237,17 @@ HBITMAP RenderBSoD(void) {
     DWORD dwAddress;
     int i, k;
 
+    // Initialize RNG
+    k = Random() & 0xFF;
+    for (i = 0; i < k; ++i)
+        Random();
+
     hdc = CreateCompatibleDC(GetDC(hwnd));
     hbmp = CreateCompatibleBitmap(GetDC(hwnd), 640, 480);
     hFont = CreateFont(14, 8, 0, 0, FW_NORMAL, 0, 0, 0, ANSI_CHARSET, OUT_RASTER_PRECIS,
                        CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY, FF_MODERN, "Lucida Console");
 
-    // Build BSOD string
     lstrcat(bsod, bsod1);
-    k = Random() & 0xFF;
-    for (i = 0; i < k; ++i)
-        Random();
     lpName = lpBadDrivers[Random() % ARRAY_SIZE(lpBadDrivers)];
     bcc = lpErrorCodes[Random() % ARRAY_SIZE(lpErrorCodes)];
     lstrcat(bsod, lpName);
