@@ -15,7 +15,6 @@
 #define TM_DISPLAY   0xBEEF
 #define TM_AUTOKILL  0xDEAD
 #define TM_FORCEDESK 0xFAC
-#define TM_FOCUS     0xF0CA
 
 #define AUTOKILL_TIMEOUT 50000
 #define DISPLAY_DELAY    1000
@@ -50,13 +49,10 @@ HWND hdlg;  // Password popup
 
 HACCEL hAccel;
 HHOOK hhkKeyboard, hhkMouse;
+HDESK hOldDesk, hNewDesk;
 
 #ifdef NOTASKMGR
 HKEY hSystemPolicy;
-#endif
-
-#ifdef SECUREDESK
-HDESK hOldDesk, hNewDesk;
 #endif
 
 ACCEL accel[] = {
@@ -305,12 +301,10 @@ DWORD APIENTRY RawEntryPoint() {
     SystemParametersInfo(SPI_GETTOGGLEKEYS, sizeof(TOGGLEKEYS), &StartupToggleKeys, 0);
     SystemParametersInfo(SPI_GETFILTERKEYS, sizeof(FILTERKEYS), &StartupFilterKeys, 0);
 
-#ifdef SECUREDESK
     hOldDesk = GetThreadDesktop(GetCurrentThreadId());
     hNewDesk = CreateDesktop(szDeskName, NULL, NULL, 0, GENERIC_ALL, NULL);
     SetThreadDesktop(hNewDesk);
     SwitchDesktop(hNewDesk);
-#endif
 
 #ifdef NOTASKMGR
     if (RegCreateKeyEx(HKEY_CURRENT_USER,
@@ -428,12 +422,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         SetTimer(hwnd, TM_AUTOKILL, AUTOKILL_TIMEOUT, NULL);
 #endif
         SetTimer(hwnd, TM_DISPLAY, DISPLAY_DELAY, NULL);
-#ifdef FORCEDESK
         SetTimer(hwnd, TM_FORCEDESK, FORCE_INTERVAL, NULL);
-#endif
-#ifndef SECUREDESK
-        SetTimer(hwnd, TM_FOCUS, FORCE_INTERVAL, NULL);
-#endif
 
         SetCursor(NULL);
 
@@ -476,15 +465,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
             DestroyWindow(hwnd);
             break;
 #endif
-#ifdef FORCEDESK
         case TM_FORCEDESK:
             SwitchDesktop(hNewDesk);
-            break;
-#endif
-#ifndef SECUREDESK
-        case TM_FOCUS:
-            goto focus;
-#endif
             break;
         }
         break;
@@ -499,11 +481,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         DestroyAcceleratorTable(hAccel);
         LockSetForegroundWindow(0);
         AllowAccessibilityShortcutKeys(TRUE);
-#ifdef SECUREDESK
         SetThreadDesktop(hOldDesk);
         SwitchDesktop(hOldDesk);
         CloseDesktop(hNewDesk);
-#endif
 #ifdef NOTASKMGR
         EnableTaskManager();
 #endif
@@ -557,9 +537,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) 
         break;
 
     case WM_ENFORCE_FOCUS:
-#ifndef SECUREDESK
-    focus:
-#endif
         if (GetForegroundWindow() != hdlg) {
             if (hdlg && hdlg != HDLG_MSGBOX) {
                 SetFocus(hdlg);
