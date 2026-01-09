@@ -48,6 +48,10 @@ HWND hdlg;  // Password popup
 HACCEL hAccel;
 HHOOK hhkKeyboard, hhkMouse;
 HDESK hOldDesk, hNewDesk;
+char szDeskName[40];
+
+LPFN_SHUTDOWNBLOCKREASONCREATE fShutdownBlockReasonCreate;
+LPFN_SHUTDOWNBLOCKREASONDESTROY fShutdownBlockReasonDestroy;
 
 #ifdef NOTASKMGR
 HKEY hSystemPolicy;
@@ -65,11 +69,6 @@ ACCEL accel[] = {
     {FALT | FCONTROL | FSHIFT | FVIRTKEY, VK_DELETE, 0xDEAD},
 };
 BOOL bAccel[ARRAY_SIZE(accel) - 1];
-
-char szDeskName[40];
-
-LPFN_SHUTDOWNBLOCKREASONCREATE fShutdownBlockReasonCreate;
-LPFN_SHUTDOWNBLOCKREASONDESTROY fShutdownBlockReasonDestroy;
 
 void GenerateUUID(LPSTR szUuid) {
     UUID bUuid;
