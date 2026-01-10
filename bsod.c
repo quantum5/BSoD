@@ -88,6 +88,24 @@ void *memset(void *s, int c, size_t n) {
     return s;
 }
 
+int UnixTime() {
+    union {
+        __int64 scalar;
+        FILETIME ft;
+    } time;
+    GetSystemTimeAsFileTime(&time.ft);
+    return (int) ((time.scalar - 116444736000000000i64) / 10000000i64);
+}
+
+int Random() {
+    static int seed = 0;
+    if (!seed)
+        seed = UnixTime();
+    seed = 1103515245 * seed + 12345;
+    seed &= 0x7FFFFFFF;
+    return seed;
+}
+
 #ifdef NOTASKMGR
 void DisableTaskManager(void) {
     DWORD dwOne = 1;
@@ -146,15 +164,6 @@ void AllowAccessibilityShortcutKeys(BOOL bAllowKeys) {
     }
 }
 
-int UnixTime() {
-    union {
-        __int64 scalar;
-        FILETIME ft;
-    } time;
-    GetSystemTimeAsFileTime(&time.ft);
-    return (int) ((time.scalar - 116444736000000000i64) / 10000000i64);
-}
-
 LPSTR bsod1 = "\r\n\
 A problem has been detected and Windows has been shut down to prevent damage\r\n\
 to your computer.\r\n\
@@ -185,15 +194,6 @@ Technical information:\r\n\
 LPSTR bsod4 = "*** STOP: 0x%08X (0x%08X,0x%08X,0x%08X,0x%08X)";
 LPSTR bsod5 = "\r\n\r\n\r\n***  ";
 LPSTR bsod6 = "%s - Address %08X base at %08X, DateStamp %08x";
-
-int Random() {
-    static int seed = 0;
-    if (!seed)
-        seed = UnixTime();
-    seed = 1103515245 * seed + 12345;
-    seed &= 0x7FFFFFFF;
-    return seed;
-}
 
 LPSTR lpBadDrivers[] = {
     "HTTP.SYS",  "SPCMDCON.SYS", "NTFS.SYS",   "ACPI.SYS",  "AMDK8.SYS", "ATI2MTAG.SYS",
