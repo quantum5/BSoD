@@ -275,6 +275,7 @@ HBITMAP RenderBSoD(void) {
     DrawText(hdc, bsod, -1, &rect, 0);
 
     DeleteDC(hdc);
+    DeleteObject(hBrush);
     return hbmp;
 }
 
@@ -301,9 +302,8 @@ DWORD APIENTRY RawEntryPoint() {
 
 #ifdef NOTASKMGR
     if (RegCreateKeyEx(HKEY_CURRENT_USER,
-                       "Software\\Microsoft\\Windows\\"
-                       "CurrentVersion\\Policies\\System",
-                       0, NULL, 0, KEY_SET_VALUE, NULL, &hSystemPolicy, NULL)) {
+                       "Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\System", 0, NULL, 0,
+                       KEY_SET_VALUE, NULL, &hSystemPolicy, NULL)) {
         hSystemPolicy = NULL;
     }
 #endif
